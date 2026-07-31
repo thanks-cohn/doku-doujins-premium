@@ -4,6 +4,7 @@ import { listBookmarks, readerUrl, removeBookmark } from "./data.js";
 import { navigate, safeNext } from "../router/router.js";
 import { getIdentityGeneration, isCurrentIdentity } from "../auth/session.js";
 import { normalizeAuthError } from "../auth/errors.js";
+import { createCheckout, createPortal } from "./subscription.js";
 
 const escape = value => String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 const authRedirect = path => new URL(path, window.location.origin).href;
@@ -43,12 +44,19 @@ export function loginView(root, mode = "login") {
     if (callbackError) status.textContent = normalizeAuthError({ message: callbackError, code: new URLSearchParams(location.search).get("error") }, "google-callback").userMessage;
     root.querySelector(".google-button")?.addEventListener("click", async event => { event.currentTarget.disabled = true; status.textContent = "Opening Google…"; try { await continueWithGoogle(next); } catch (error) { status.textContent = error.authDiagnostic?.userMessage || normalizeAuthError(error, "google-sign-in").userMessage; event.currentTarget.disabled = false; } });
 }
-export function profileView(root, user) {
+export function profileView(root, user, access = null) {
     const metadata = user.user_metadata || {};
     const presentation = accountPresentation(user);
     const avatar = presentation.avatar ? `<img class="account-avatar" src="${escape(presentation.avatar)}" alt="">` : `<span class="account-avatar account-avatar-fallback" aria-hidden="true">${escape(presentation.fallback)}</span>`;
-    root.innerHTML = shell("Your profile", `<div class="profile-summary">${avatar}<div><h2>${escape(presentation.name)}</h2><p>${escape(presentation.email)}</p></div></div><dl><dt>Account created</dt><dd>${escape(user.created_at ? new Date(user.created_at).toLocaleDateString() : "Unavailable")}</dd><dt>Authentication providers</dt><dd>${escape(providers(user))}</dd></dl><div class="account-actions"><a data-route href="/account/bookmarks">View bookmarks</a><a data-route href="/account/settings">Open settings</a><button class="signout-button">Sign out</button><p class="signout-status" role="status"></p></div>`, "profile");
+    const manage = access?.hasStripeCustomer ? '<button class="manage-subscription" type="button">Manage subscription</button>' : "";
+    root.innerHTML = shell("Your profile", `<div class="profile-summary">${avatar}<div><h2>${escape(presentation.name)}</h2><p>${escape(presentation.email)}</p></div></div><dl><dt>Account created</dt><dd>${escape(user.created_at ? new Date(user.created_at).toLocaleDateString() : "Unavailable")}</dd><dt>Authentication providers</dt><dd>${escape(providers(user))}</dd>${access?.subscriptionStatus ? `<dt>Subscription</dt><dd>${escape(access.subscriptionStatus)}</dd>` : ""}</dl><div class="account-actions"><a data-route href="/account/bookmarks">View bookmarks</a><a data-route href="/account/settings">Open settings</a>${manage}<button class="signout-button">Sign out</button><p class="signout-status" role="status"></p></div>`, "profile");
+    bindPortal(root);
     bindSignOut(root);
+}
+export function subscriptionView(root, { verifying = false } = {}) {
+    root.innerHTML = shell(verifying ? "Verifying subscription" : "Unlock Doku-Doujin Premium", `<div class="premium-offer"><p class="premium-price"><strong>7 days free, then $5 USD per month.</strong></p><ul><li>Payment information is required to begin the free trial.</li><li>You will not be charged when the trial begins.</li><li>After seven days, the subscription renews monthly at $5 USD.</li><li>Cancel any time through the subscription-management portal.</li></ul>${verifying ? '<p class="subscription-status" role="status">Waiting for secure confirmation from Stripe…</p>' : '<button class="account-primary subscribe-button" type="button">Start my 7-day free trial</button><p class="subscription-status" role="status" aria-live="polite"></p>'}</div>`, null);
+    const button = root.querySelector(".subscribe-button"), status = root.querySelector(".subscription-status");
+    button?.addEventListener("click", async () => { button.disabled = true; status.textContent = "Opening secure Stripe Checkout…"; try { const result = await createCheckout(); if (result.url) location.assign(result.url); else if (result.bypass || result.alreadySubscribed) location.reload(); else throw new Error(); } catch { button.disabled = false; status.textContent = "Checkout could not be opened. Please try again."; } });
 }
 export async function bookmarksView(root, user) {
     const identityGeneration = getIdentityGeneration();
@@ -80,4 +88,8 @@ export function settingsView(root, user) {
 function bindSignOut(root) {
     const button = root.querySelector(".signout-button"), status = root.querySelector(".signout-status");
     button?.addEventListener("click", async () => { button.disabled = true; if (status) status.textContent = "Signing out…"; try { await signOut(); navigate("/", { replace: true }); } catch { button.disabled = false; if (status) status.textContent = "Sign out did not finish. Your account is still active; please try again."; } });
+}
+function bindPortal(root) {
+    const button = root.querySelector(".manage-subscription"), status = root.querySelector(".signout-status");
+    button?.addEventListener("click", async () => { button.disabled = true; if (status) status.textContent = "Opening subscription management…"; try { const result = await createPortal(); location.assign(result.url); } catch { button.disabled = false; if (status) status.textContent = "Subscription management could not be opened."; } });
 }
