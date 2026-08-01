@@ -1,0 +1,37 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/account/access",
+      "mountPath": "/api/account",
+      "method": "GET",
+      "module": [
+        "api/account/access.js:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/stripe/create-checkout",
+      "mountPath": "/api/stripe",
+      "method": "POST",
+      "module": [
+        "api/stripe/create-checkout.js:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/stripe/create-portal",
+      "mountPath": "/api/stripe",
+      "method": "POST",
+      "module": [
+        "api/stripe/create-portal.js:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/stripe/webhook",
+      "mountPath": "/api/stripe",
+      "method": "POST",
+      "module": [
+        "api/stripe/webhook.js:onRequestPost"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}

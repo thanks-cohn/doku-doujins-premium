@@ -25,6 +25,24 @@ export async function onRequestPost({ request, env }) {
       success_url: `${base}/account/profile?checkout=success`, cancel_url: `${base}/account/profile?checkout=cancelled`
     });
     return json({ url: session.url });
-  } catch { return json({ error: "Checkout could not be created." }, 500); }
+
+
+
+
+} catch (error) {
+  console.error(
+    "CHECKOUT CREATION FAILED:",
+    error?.message || error,
+    error?.stack || ""
+  );
+
+  return json(
+    {
+      error: "Checkout could not be created."
+    },
+    500
+  );
+}
+
 }
 
