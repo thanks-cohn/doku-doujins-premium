@@ -131,14 +131,6 @@ async function render(route) {
     let access = null;
     const needsPremium = premiumRequiredFor(route);
 
-    /*
-     * Important:
-     * Public pages such as the homepage and reader are no longer
-     * replaced by the Stripe trial screen merely because a visitor
-     * is signed in.
-     *
-     * Premium access is checked only for account pages.
-     */
     if (
         state.status === "authenticated" &&
         needsPremium
@@ -148,9 +140,9 @@ async function render(route) {
                 "checkout"
             ) === "success";
 
-        subscriptionView(root(), {
-            verifying: checkoutReturn
-        });
+        // Show a neutral loading state while access is checked.
+        // Never flash the trial offer before we know the user lacks access.
+        loadingView(root());
 
         try {
             access = checkoutReturn
@@ -163,6 +155,8 @@ async function render(route) {
             );
 
             if (renderId === generation) {
+                subscriptionView(root());
+
                 const status = root().querySelector(
                     ".subscription-status"
                 );
