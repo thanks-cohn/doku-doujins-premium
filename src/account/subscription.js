@@ -1,4 +1,5 @@
 import { getAuthState } from "../auth/session.js";
+import { refreshAfterCheckout } from "../access/capabilities.js";
 
 async function api(path, options = {}) {
     const token = getAuthState().session?.access_token;
@@ -70,8 +71,8 @@ export const createCheckout = () => api("/api/stripe/create-checkout", { method:
 export const createPortal = () => api("/api/stripe/create-portal", { method: "POST" });
 export async function pollForPremium({ attempts = 10, delay = 1500 } = {}) {
   for (let attempt = 0; attempt < attempts; attempt++) {
-    const access = await fetchAccess();
-    if (access.hasPremiumAccess) return access;
+    const capabilities = await refreshAfterCheckout();
+    if (capabilities.hasPremiumAccess) return capabilities.access;
     if (attempt < attempts - 1) await new Promise(resolve => setTimeout(resolve, delay));
   }
   return null;

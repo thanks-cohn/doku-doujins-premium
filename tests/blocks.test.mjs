@@ -3,7 +3,16 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const source = (await readFile(new URL("../src/components/blocks.js", import.meta.url), "utf8"))
-    .replace('import blocksData from "../data/blocks.json";', "const blocksData = {};");
+    .replace('import blocksData from "../data/blocks.json";', "const blocksData = {};")
+    .replace('import { mountIframeSlot, removeSlot } from "../advertising/orchestrator.js";', `
+        const removeSlot = () => {};
+        const mountIframeSlot = ({ id, src, title, width, height }) => {
+            const element = document.createElement("section"); element.className = "site-block rail-ad-block";
+            const frame = document.createElement("div"); const iframe = document.createElement("iframe");
+            iframe.src = src; iframe.title = title; iframe.width = width; iframe.height = height;
+            frame.appendChild(iframe); element.appendChild(frame); return element;
+        };
+    `);
 const { renderBlocksIntoContainers, resolveBlockBackground } = await import(
     `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`
 );
