@@ -2,7 +2,11 @@
 
 Doku Doujins remains one website and one library. Free reading should be useful and pleasant; Premium should remove friction rather than manufacture it.
 
+> **Plan, not current behavior:** this document explains the proposed experience. Today, the repository uses the same continuous-scroll reader for everyone; that reader mounts configured rail-ad iframes without checking Premium access. Premium checks currently protect account pages, not the reader. The work below requires later, separately reviewed implementation.
+
 ## At a glance
+
+The table is the **proposed target**, not a statement that these differences already exist.
 
 | | Free / public | Premium (trialing or active) |
 |---|---|---|
@@ -99,4 +103,4 @@ The distinction succeeds when:
 * exact work, chapter, and page links behave the same for every eligible reader;
 * library reading survives temporary account, billing, comment, and advertising failures.
 
-The architecture and evidence behind these promises are documented in [Ad-Supported Public Reader and Ad-Free Premium Scroll-Down Architecture](codex/ad-public-vs-premium-scroll-down.md).
+The architecture and repository evidence behind these promises are documented in [Ad-Supported Public Reader and Ad-Free Premium Scroll-Down Architecture](codex/ad-public-vs-premium-scroll-down.md). That technical blueprint also records a provenance issue: the specifically named request document was absent from this checkout, so it must be recovered or identified and reconciled before runtime implementation begins.

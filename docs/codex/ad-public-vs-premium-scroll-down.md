@@ -26,7 +26,16 @@ Do **not** emit one HTML file per page. Use a shared static reader shell plus im
 
 ## 1. Evidence-based repository audit
 
-Labels mean **confirmed** (directly observable in this checkout), **inference** (strong conclusion that needs runtime/provider proof), and **unknown** (external state not represented here).
+Labels mean **confirmed** (directly observable in this checkout), **inference** (strong conclusion that needs runtime/provider proof), **proposal** (future architecture, not current behavior), and **unknown** (external state not represented here).
+
+### Research integrity and prior-document corrections
+
+This revision rechecked the prior versions of this blueprint and `docs/premium-vs-free.md` against the current checkout rather than treating either document as authority. The requested requirements path, `docs/codex/ad-public-vs-premium-scroll-down-request.md`, is **not present in this checkout** and has no history on the checked-out branch; the closest checked-in requirements record is `docs/codex/public-vs-premium-architecture-task.md`. That missing input remains an **unresolved documentation provenance question**: implementation must not infer any requirement that exists only in the unavailable file.
+
+Two distinctions from the prior research are made explicit here:
+
+* **Correction — current reader ads:** `src/data/advertisement.json` describes enabled between-page/video/interstitial placements, but no current runtime module imports that file. Separately, `src/data/blocks.json` contains enabled rail-ad iframe records, and `src/page/reader.js::startReaderBlocks` invokes `Blocks.start` for the reader side rails; `src/components/blocks.js::renderBlock` then assigns the provider URL to an iframe. Therefore the rail-ad path is confirmed active in code, while the advertisement JSON placements are configuration without a confirmed runtime consumer.
+* **Correction — current Premium scope:** `src/page/page.js::premiumRequiredFor` requests `/api/account/access` only for the three account routes. The `legacy-reader` branch starts `Reader` without resolving Premium. Consequently, neither Premium continuous-scroll selection nor Premium ad suppression exists in the current reader; both are proposals below. The current reader is continuous for every reader state, not already a Premium-only feature.
 
 ### 1.1 Application and deployment
 
@@ -110,8 +119,8 @@ Recommended resolved shape (names are a future contract, not an implementation):
 
 ### 1.7 Advertising
 
-* **Confirmed:** `src/data/advertisement.json` currently enables between-reader-pages every three pages plus desktop/mobile interstitial/video slots, with third-party provider and Delegate-CH hosts.
-* **Confirmed:** reader/blocks code contains lazy iframes and centralized-ish data, but the current access object is not the mount gate for the reader ad lifecycle.
+* **Confirmed configuration, not confirmed execution:** `src/data/advertisement.json` enables between-reader-pages every three pages plus desktop/mobile interstitial/video records, with third-party provider and Delegate-CH hosts; repository-wide import/reference search finds no consumer of this JSON.
+* **Confirmed execution path:** `src/data/blocks.json` declares left/right `rail-ad` records. Reader rendering calls `startReaderBlocks`, `Blocks.start` includes those records because they are not reader-disabled, and `renderBlock` creates lazy iframes whose `src` points at the provider. No access capability gates that path.
 * **Requirement:** for Premium, do not mount a slot, reserve blank space, import/initialize provider code, create an iframe, retry, initialize a popunder, or make DNS/network requests. CSS hiding is not ad-free.
 * While access is unresolved, show static content but hold all ad initialization. If access fails, favor a deterministic documented policy: anonymous visitors can use the public reader; an authenticated user with unresolved status gets the public mechanics but **ads remain held for that page session** to prevent charging a Premium user with an ad request. Retry access with bounded backoff and expose a non-blocking status. This fail-safe costs some ad impressions but protects the paid promise.
 
@@ -348,15 +357,16 @@ Every phase requires a separate reviewed implementation, measurable acceptance c
 
 ## 11. Unresolved decisions requiring evidence
 
-1. Authoritative production hostname(s), Pages fallback/rewrite/status behavior, and canonical trailing-slash policy.
-2. Live static/CDN headers, cache rules, R2 mapping, tier/cache reserve, and measured miss/bandwidth profile.
-3. Exact registry datastore, numeric maximum/range-leasing need, source fingerprint rules, and ownership of manual reconciliation.
-4. Whether Premium catalog gating is discovery-only or prohibits asset retrieval, per classification.
-5. Legal/moderation takedown SLA versus immutable public caching.
-6. Representative page dimensions/bytes, mobile memory thresholds, prefetch budgets, and responsive variant widths.
-7. Ad-provider policy, consent/age requirements, interstitial/popunder acceptability, and verified host inventory.
-8. Server-side Premium comment enforcement design and compatibility with current RPC/RLS/service-role paths.
-9. Legacy URL retention period and whether ambiguous split/merge aliases return 300/410 rather than redirect.
+1. Restore or identify the missing `docs/codex/ad-public-vs-premium-scroll-down-request.md`, then reconcile any requirements unique to it before implementation.
+2. Authoritative production hostname(s), Pages fallback/rewrite/status behavior, and canonical trailing-slash policy.
+3. Live static/CDN headers, cache rules, R2 mapping, tier/cache reserve, and measured miss/bandwidth profile.
+4. Exact registry datastore, numeric maximum/range-leasing need, source fingerprint rules, and ownership of manual reconciliation.
+5. Whether Premium catalog gating is discovery-only or prohibits asset retrieval, per classification.
+6. Legal/moderation takedown SLA versus immutable public caching.
+7. Representative page dimensions/bytes, mobile memory thresholds, prefetch budgets, and responsive variant widths.
+8. Ad-provider policy, consent/age requirements, interstitial/popunder acceptability, and verified host inventory.
+9. Server-side Premium comment enforcement design and compatibility with current RPC/RLS/service-role paths.
+10. Legacy URL retention period and whether ambiguous split/merge aliases return 300/410 rather than redirect.
 
 ## 12. Acceptance checklist
 
