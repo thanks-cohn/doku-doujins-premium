@@ -1299,7 +1299,7 @@ async function onRequestPost3({ request: request2, env: env2 }) {
 }
 __name(onRequestPost3, "onRequestPost");
 
-// ../.wrangler/tmp/pages-yBGgBc/functionsRoutes-0.3808801257263017.mjs
+// ../.wrangler/tmp/pages-8BWP24/functionsRoutes-0.26011551831356905.mjs
 var routes = [
   {
     routePath: "/api/account/access",
