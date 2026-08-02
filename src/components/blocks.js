@@ -1,4 +1,5 @@
 import blocksData from "../data/blocks.json";
+import { mountIframeSlot, removeSlot } from "../advertising/orchestrator.js";
 
 const IMAGE_PATTERN = /\.(avif|bmp|gif|jpe?g|png|svg|webp)(\?.*)?$/i;
 const HTML_PATTERN = /\.html?(\?.*)?$/i;
@@ -118,33 +119,18 @@ function textBlock(item, background) {
     return element;
 }
 
-async function renderBlock(target, rawItem, defaults) {
+async function renderBlock(target, rawItem, defaults, slotId = "") {
     const item = normalizeBlock(rawItem);
     if (!item) return;
     const background = resolveBlockBackground(item, defaults);
 
     try {
         if (item.type === "rail-ad") {
-            const element = block("rail-ad-block", item, background);
-            const frame = document.createElement("div");
-            frame.className = "rail-ad-frame";
-            frame.style.backgroundColor = background;
-            const iframe = document.createElement("iframe");
-            iframe.className = "block-iframe rail-ad-iframe";
-            iframe.src = item.src;
-            iframe.title = item.title || "Sponsored content";
-            iframe.width = item.width || 160;
-            iframe.height = item.height || 600;
-            iframe.loading = "lazy";
-            iframe.scrolling = "no";
-            iframe.setAttribute("frameborder", "0");
-            iframe.setAttribute("marginwidth", "0");
-            iframe.setAttribute("marginheight", "0");
-            iframe.style.border = "0";
-            iframe.style.backgroundColor = background;
-            frame.appendChild(iframe);
-            element.appendChild(frame);
-            target.appendChild(element);
+            const element = mountIframeSlot({ id: slotId, src: item.src, title: item.title, width: item.width, height: item.height });
+            if (element) {
+                element.style.backgroundColor = background;
+                target.appendChild(element);
+            }
         } else if (item.html) {
             const element = block("html-block", item, background);
             appendHtml(element, await loadText(item.html));
@@ -177,19 +163,20 @@ async function renderBlock(target, rawItem, defaults) {
     }
 }
 
-async function buildBlock(rawItem, defaults) {
+async function buildBlock(rawItem, defaults, slotId) {
     const fragment = document.createDocumentFragment();
-    await renderBlock(fragment, rawItem, defaults);
+    await renderBlock(fragment, rawItem, defaults, slotId);
     return fragment;
 }
 
-async function renderBlocks(target, items = [], page = "landing", defaults) {
+async function renderBlocks(target, items = [], page = "landing", defaults, placement = "") {
     if (!target) return;
     activeSessions.get(target)?.();
     const filtered = items.filter(item => isEnabled(item, page));
-    const rendered = await Promise.all(filtered.map(item => buildBlock(item, defaults)));
+    const rendered = await Promise.all(filtered.map((item, index) => buildBlock(item, defaults, `${page}:${placement}:${normalizeBlock(item)?.id || index}`)));
     target.replaceChildren(...rendered);
-    const cleanup = () => target.replaceChildren();
+    const slotIds = filtered.map((item, index) => normalizeBlock(item)?.type === "rail-ad" ? `${page}:${placement}:${normalizeBlock(item)?.id || index}` : null).filter(Boolean);
+    const cleanup = () => { slotIds.forEach(removeSlot); target.replaceChildren(); };
     activeSessions.set(target, cleanup);
     return cleanup;
 }
@@ -234,7 +221,8 @@ export async function renderBlocksIntoContainers(options = {}) {
         containers[placement],
         itemsForPlacement(config, placement),
         page,
-        config.defaults
+        config.defaults,
+        placement
     )));
     return () => cleanups.forEach(cleanup => cleanup?.());
 }

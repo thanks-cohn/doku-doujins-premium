@@ -19,9 +19,9 @@ import {
     subscriptionView
 } from "../account/views.js";
 import {
-    fetchAccess,
     pollForPremium
 } from "../account/subscription.js";
+import { refreshAccess } from "../access/capabilities.js";
 
 let currentRoute;
 let generation = 0;
@@ -147,7 +147,10 @@ async function render(route) {
         try {
             access = checkoutReturn
                 ? await pollForPremium()
-                : await fetchAccess();
+                : (await refreshAccess()).access;
+            if (!checkoutReturn && !access) {
+                throw new Error("Access could not be verified. Please reload and try again.");
+            }
         } catch (error) {
             console.error(
                 "[access] verification failed",
