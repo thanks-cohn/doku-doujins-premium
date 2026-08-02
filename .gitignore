@@ -40,3 +40,6 @@ backup-copy/
 .env.local
 .deletor-backups/
 scripts/deletor.py.before-scroll-fix
+
+# Wrangler generated files
+.wrangler/
